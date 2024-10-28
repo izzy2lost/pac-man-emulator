@@ -19,7 +19,7 @@ jobs:
     env:
       SolutionPath: "emulator.uwp/pac-man-emulator-uwp.sln"
       Platform: x64
-      Configuration: Debug
+      Configuration: Release
       BuildMode: SideLoadOnly
       AppxBundle: Never
       ProjectPath: "emulator.uwp/pac-man-emulator-uwp.csproj"
