@@ -1,0 +1,34 @@
+name: UWP Xbox Certificate Generator
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate-certificate:
+    runs-on: windows-2019
+
+    env:
+      PfxPassword: 'izzyAgamer1330'  # Replace with a secure password
+
+    steps:
+      - name: Generate Self-Signed Certificate
+        id: generate_cert
+        run: |
+          New-Item -ItemType Directory -Path $env:GITHUB_WORKSPACE\certificate
+          $cert = New-SelfSignedCertificate -CertStoreLocation "Cert:\CurrentUser\My" `
+            -Subject "CN=MyUWPCert" `
+            -KeyAlgorithm RSA `
+            -KeyLength 2048 `
+            -Provider "Microsoft Enhanced RSA and AES Cryptographic Provider" `
+            -KeyExportPolicy Exportable `
+            -Type CodeSigningCert `
+            -TextExtension "2.5.29.37={text}1.3.6.1.5.5.7.3.3"
+          $pfxPath = "$env:GITHUB_WORKSPACE\certificate\uwp_cert.pfx"
+          Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password (ConvertTo-SecureString -String $env:PfxPassword -Force -AsPlainText)
+        shell: pwsh
+
+      - name: Upload Certificate Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: UWP_Xbox_Certificate
+          path: certificate/uwp_cert.pfx
