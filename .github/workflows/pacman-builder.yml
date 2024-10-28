@@ -26,6 +26,7 @@ jobs:
       ProjectDirectory: "./emulator.uwp/Xbox Pacman"
       PackageOutputRootDir: C:\AppPackage
       PackageOutputDir: "emulator.uwp/Xbox Pacman"
+      PfxPassword: 'YourSecurePassword123!' # Replace with a strong password
 
     steps:
       - name: Checkout Repository
@@ -36,42 +37,38 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v1
 
-      - name: Decode and Import PFX Certificate
+      - name: Decode PFX Certificate
         run: |
-          $pfxBytes = [System.Convert]::FromBase64String("${{ secrets.UWP_CERT_PFX_BASE64 }}")
-          [System.IO.File]::WriteAllBytes("$env:GITHUB_WORKSPACE\uwp_cert.pfx", $pfxBytes)
-          $cert = Import-PfxCertificate -FilePath "$env:GITHUB_WORKSPACE\uwp_cert.pfx" -CertStoreLocation Cert:\CurrentUser\My -Password (ConvertTo-SecureString -String "${{ secrets.PFX_PASSWORD }}" -AsPlainText -Force)
-          echo "THUMBPRINT=$($cert.Thumbprint)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
+          [System.IO.File]::WriteAllBytes("$env:PackageOutputRootDir\uwp_cert.pfx", [Convert]::FromBase64String("${{ secrets.PFX_CERTIFICATE_BASE64 }}"))
         shell: pwsh
 
-      - name: Verify Thumbprint
+      - name: Verify PFX File
         run: |
-          echo "Thumbprint is: $env:THUMBPRINT"
+          if (Test-Path "$env:PackageOutputRootDir\uwp_cert.pfx") {
+            Write-Host "PFX file created successfully."
+          } else {
+            Write-Host "PFX file not found!"
+            exit 1
+          }
         shell: pwsh
-
-      - name: Set Package Name
-        id: set_package_name
-        run: |
-          echo "PACKAGE_NAME=${{ github.event.inputs.package_name }}_${{ github.event.inputs.tag_name }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
 
       - name: App Build
         run: |
-         msbuild /restore `
-         "$env:SolutionPath" `
-         /p:Platform=$env:Platform `
-         /p:Configuration=$env:Configuration `
-         /p:UapAppxPackageBuildMode=$env:BuildMode `
-         /p:AppxBundle=$env:AppxBundle `
-         /p:PackageCertificateKeyFile="$env:PFX_PATH" `
-         /p:PackageCertificatePassword="$env:PfxPassword" `
-         /p:AppxPackageTestDir="${env:PackageOutputRootDir}\${env:PACKAGE_NAME}" `
-         /p:AppxPackageSigningEnabled=true `
-         /p:RestorePackagesConfig=true
+          msbuild /restore `
+            "$env:SolutionPath" `
+            /p:Platform=$env:Platform `
+            /p:Configuration=$env:Configuration `
+            /p:UapAppxPackageBuildMode=$env:BuildMode `
+            /p:AppxBundle=$env:AppxBundle `
+            /p:PackageCertificateThumbprint="CD2BD70C693B0F785F0B34883E1764D61990FE15" `
+            /p:AppxPackageTestDir="${env:PackageOutputRootDir}\${{ github.event.inputs.package_name }}_${{ github.event.inputs.tag_name }}" `
+            /p:AppxPackageSigningEnabled=true `
+            /p:RestorePackagesConfig=true
         shell: pwsh
 
       - name: Clean the Package
         run: |
-          $PackagePath = "${env:PackageOutputRootDir}\${env:PACKAGE_NAME}"
+          $PackagePath = "${env:PackageOutputRootDir}\${{ github.event.inputs.package_name }}_${{ github.event.inputs.tag_name }}"
           if (Test-Path $PackagePath) {
             Write-Host "Cleaning package directory: $PackagePath"
             Remove-Item -Recurse -path "$PackagePath\Add-AppDevPackage.resources" -ErrorAction SilentlyContinue
@@ -90,10 +87,10 @@ jobs:
 
       - name: Create Archive
         run: |
-          $PackagePath = "${env:PackageOutputRootDir}\${env:PACKAGE_NAME}"
+          $PackagePath = "${env:PackageOutputRootDir}\${{ github.event.inputs.package_name }}_${{ github.event.inputs.tag_name }}"
           if (Test-Path $PackagePath) {
             Write-Host "Creating archive for: $PackagePath"
-            Compress-Archive -Path "$PackagePath\*" -DestinationPath "${env:PackageOutputRootDir}\${env:PACKAGE_NAME}.zip"
+            Compress-Archive -Path "$PackagePath\*" -DestinationPath "${env:PackageOutputRootDir}\${{ github.event.inputs.package_name }}_${{ github.event.inputs.tag_name }}.zip"
             Write-Host "Contents of package output directory after archiving:"
             Get-ChildItem -Path "${env:PackageOutputRootDir}" -Recurse
           } else {
@@ -106,4 +103,4 @@ jobs:
         uses: actions/upload-artifact@v4.3.4
         with:
           name: ${{ github.event.inputs.package_name }} Build
-          path: ${{ env.PackageOutputRootDir }}\${{ env.PACKAGE_NAME }}.zip
+          path: "${env:PackageOutputRootDir}${{ github.event.inputs.package_name }}_$ {{github.event.inputs.tag_name }}.zip"
