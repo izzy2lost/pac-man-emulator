@@ -26,6 +26,7 @@ jobs:
       ProjectDirectory: "./emulator.uwp/Xbox Pacman"
       PackageOutputRootDir: C:\AppPackage
       PackageOutputDir: "emulator.uwp/Xbox Pacman"
+      PfxPassword: 'YourSecurePassword123!' # Replace with a strong password
 
     steps:
       - name: Checkout Repository
@@ -39,21 +40,25 @@ jobs:
       - name: Generate Self-Signed Certificate
         id: generate_cert
         run: |
-         $cert = New-SelfSignedCertificate -CertStoreLocation "Cert:\CurrentUser\My" `
-         -Subject "CN=MyUWPCert" `
-         -KeyAlgorithm RSA `
-         -KeyLength 2048 `
-         -Provider "Microsoft Enhanced RSA and AES Cryptographic Provider" `
-         -KeyExportPolicy Exportable `
-         -Type CodeSigningCert `
-         -TextExtension "2.5.29.37={text}1.3.6.1.5.5.7.3.3"
-         $thumbprint = $cert.Thumbprint
-         echo "THUMBPRINT=$thumbprint" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
+          $cert = New-SelfSignedCertificate -CertStoreLocation "Cert:\CurrentUser\My" `
+            -Subject "CN=MyUWPCert" `
+            -KeyAlgorithm RSA `
+            -KeyLength 2048 `
+            -Provider "Microsoft Enhanced RSA and AES Cryptographic Provider" `
+            -KeyExportPolicy Exportable `
+            -Type CodeSigningCert `
+            -TextExtension "2.5.29.37={text}1.3.6.1.5.5.7.3.3"
+          $thumbprint = $cert.Thumbprint
+          $pfxPath = "$env:PackageOutputRootDir\uwp_cert.pfx"
+          Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password (ConvertTo-SecureString -String $env:PfxPassword -Force -AsPlainText)
+          echo "THUMBPRINT=$thumbprint" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
+          echo "PFX_PATH=$pfxPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
         shell: pwsh
 
       - name: Verify Thumbprint
         run: |
           echo "Thumbprint is: $env:THUMBPRINT"
+          echo "PFX path is: $env:PFX_PATH"
         shell: pwsh
 
       - name: Set Package Name
