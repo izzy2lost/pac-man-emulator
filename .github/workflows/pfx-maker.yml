@@ -11,10 +11,14 @@ jobs:
       PfxPassword: 'izzyAgamer1330'  # Replace with a secure password
 
     steps:
+      - name: Generate Certificate Directory
+        run: |
+          New-Item -ItemType Directory -Path "$env:GITHUB_WORKSPACE\certificate"
+        shell: pwsh
+
       - name: Generate Self-Signed Certificate
         id: generate_cert
         run: |
-          New-Item -ItemType Directory -Path $env:GITHUB_WORKSPACE\certificate
           $cert = New-SelfSignedCertificate -CertStoreLocation "Cert:\CurrentUser\My" `
             -Subject "CN=MyUWPCert" `
             -KeyAlgorithm RSA `
