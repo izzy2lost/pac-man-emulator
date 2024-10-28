@@ -37,9 +37,10 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v1
 
-      - name: Decode PFX Certificate
+      - name: Decode PFX from GitHub Secrets
+        id: decode_pfx
         run: |
-          [System.IO.File]::WriteAllBytes("$env:PackageOutputRootDir\uwp_cert.pfx", [Convert]::FromBase64String("${{ secrets.PFX_CERTIFICATE_BASE64 }}"))
+          echo "${{ secrets.PFX_CERTIFICATE_BASE64 }}" | base64 --decode > "$env:PackageOutputRootDir\uwp_cert.pfx"
         shell: pwsh
 
       - name: Verify PFX File
@@ -47,10 +48,15 @@ jobs:
           if (Test-Path "$env:PackageOutputRootDir\uwp_cert.pfx") {
             Write-Host "PFX file created successfully."
           } else {
-            Write-Host "PFX file not found!"
+            Write-Host "Failed to create PFX file."
             exit 1
           }
         shell: pwsh
+
+      - name: Set Package Name
+        id: set_package_name
+        run: |
+          echo "PACKAGE_NAME=${{ github.event.inputs.package_name }}_${{ github.event.inputs.tag_name }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
 
       - name: App Build
         run: |
@@ -61,14 +67,15 @@ jobs:
             /p:UapAppxPackageBuildMode=$env:BuildMode `
             /p:AppxBundle=$env:AppxBundle `
             /p:PackageCertificateThumbprint="CD2BD70C693B0F785F0B34883E1764D61990FE15" `
-            /p:AppxPackageTestDir="${env:PackageOutputRootDir}\${{ github.event.inputs.package_name }}_${{ github.event.inputs.tag_name }}" `
+            /p:AppxPackageTestDir="${env:PackageOutputRootDir}\${env:PACKAGE_NAME}" `
             /p:AppxPackageSigningEnabled=true `
+            /p:AppxPackageCertificatePath="$env:PackageOutputRootDir\uwp_cert.pfx" `
             /p:RestorePackagesConfig=true
         shell: pwsh
 
       - name: Clean the Package
         run: |
-          $PackagePath = "${env:PackageOutputRootDir}\${{ github.event.inputs.package_name }}_${{ github.event.inputs.tag_name }}"
+          $PackagePath = "${env:PackageOutputRootDir}\${env:PACKAGE_NAME}"
           if (Test-Path $PackagePath) {
             Write-Host "Cleaning package directory: $PackagePath"
             Remove-Item -Recurse -path "$PackagePath\Add-AppDevPackage.resources" -ErrorAction SilentlyContinue
@@ -87,10 +94,10 @@ jobs:
 
       - name: Create Archive
         run: |
-          $PackagePath = "${env:PackageOutputRootDir}\${{ github.event.inputs.package_name }}_${{ github.event.inputs.tag_name }}"
+          $PackagePath = "${env:PackageOutputRootDir}\${env:PACKAGE_NAME}"
           if (Test-Path $PackagePath) {
             Write-Host "Creating archive for: $PackagePath"
-            Compress-Archive -Path "$PackagePath\*" -DestinationPath "${env:PackageOutputRootDir}\${{ github.event.inputs.package_name }}_${{ github.event.inputs.tag_name }}.zip"
+            Compress-Archive -Path "$PackagePath\*" -DestinationPath "${env:PackageOutputRootDir}\${env:PACKAGE_NAME}.zip"
             Write-Host "Contents of package output directory after archiving:"
             Get-ChildItem -Path "${env:PackageOutputRootDir}" -Recurse
           } else {
@@ -103,4 +110,4 @@ jobs:
         uses: actions/upload-artifact@v4.3.4
         with:
           name: ${{ github.event.inputs.package_name }} Build
-          path: "${env:PackageOutputRootDir}${{ github.event.inputs.package_name }}_$ {{github.event.inputs.tag_name }}.zip"
+          path: ${{ env.PackageOutputRootDir }}\${{ env.PACKAGE_NAME }}.zip
