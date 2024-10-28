@@ -40,7 +40,12 @@ jobs:
         id: generate_cert
         run: |
           $cert = New-SelfSignedCertificate -CertStoreLocation "Cert:\CurrentUser\My" -Subject "CN=MyUWPCert" -KeyAlgorithm RSA -KeyLength 2048 -Provider "Microsoft Enhanced RSA and AES Cryptographic Provider" -KeyExportPolicy Exportable -NotAfter (Get-Date).AddYears(1) -Type CodeSigningCert -TextExtension "2.5.29.37={text}1.3.6.1.5.5.7.3.3"
-          echo "THUMBPRINT=$($cert.Thumbprint)" >> $GITHUB_ENV
+          echo "::set-env name=THUMBPRINT::$(echo $cert.Thumbprint)"
+        shell: pwsh
+
+      - name: Verify Thumbprint
+        run: |
+          echo "Thumbprint is: $THUMBPRINT"
         shell: pwsh
 
       - name: Set Package Name
@@ -56,7 +61,7 @@ jobs:
             /p:Configuration=$env:Configuration `
             /p:UapAppxPackageBuildMode=$env:BuildMode `
             /p:AppxBundle=$env:AppxBundle `
-            /p:PackageCertificateThumbprint="${{ env.THUMBPRINT }}" `
+            /p:PackageCertificateThumbprint="$THUMBPRINT" `
             /p:AppxPackageTestDir="${{ env.PackageOutputRootDir }}\${{ env.PACKAGE_NAME }}" `
             /p:AppxPackageSigningEnabled=true `
             /p:RestorePackagesConfig=true
