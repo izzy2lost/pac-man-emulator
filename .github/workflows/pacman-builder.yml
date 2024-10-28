@@ -56,16 +56,17 @@ jobs:
 
       - name: App Build
         run: |
-          msbuild /restore `
-            "$env:SolutionPath" `
-            /p:Platform=$env:Platform `
-            /p:Configuration=$env:Configuration `
-            /p:UapAppxPackageBuildMode=$env:BuildMode `
-            /p:AppxBundle=$env:AppxBundle `
-            /p:PackageCertificateThumbprint="$env:THUMBPRINT" `
-            /p:AppxPackageTestDir="${env:PackageOutputRootDir}\${env:PACKAGE_NAME}" `
-            /p:AppxPackageSigningEnabled=true `
-            /p:RestorePackagesConfig=true
+         msbuild /restore `
+         "$env:SolutionPath" `
+         /p:Platform=$env:Platform `
+         /p:Configuration=$env:Configuration `
+         /p:UapAppxPackageBuildMode=$env:BuildMode `
+         /p:AppxBundle=$env:AppxBundle `
+         /p:PackageCertificateKeyFile="$env:PFX_PATH" `
+         /p:PackageCertificatePassword="$env:PfxPassword" `
+         /p:AppxPackageTestDir="${env:PackageOutputRootDir}\${env:PACKAGE_NAME}" `
+         /p:AppxPackageSigningEnabled=true `
+         /p:RestorePackagesConfig=true
         shell: pwsh
 
       - name: Clean the Package
