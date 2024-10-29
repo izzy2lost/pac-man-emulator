@@ -23,7 +23,9 @@ jobs:
       BuildMode: SideLoadOnly
       AppxBundle: Never
       ProjectPath: "emulator.uwp/pac-man-emulator-uwp.csproj"
-      PackageOutputRootDir: C:\AppPackage
+      ProjectDirectory: "./emulator.uwp/Xbox Pacman"
+      PackageOutputRootDir: "D:\\a\\pac-man-emulator\\pac-man-emulator\\emulator.uwp\\AppPackages"
+      PackageOutputDir: "D:\\a\\pac-man-emulator\\pac-man-emulator\\emulator.uwp\\Xbox Pacman"
 
     steps:
       - name: Checkout Repository
@@ -55,27 +57,22 @@ jobs:
             /p:UapAppxPackageBuildMode=$env:BuildMode `
             /p:AppxBundle=$env:AppxBundle `
             /p:PackageCertificateThumbprint="${{ env.THUMBPRINT }}" `
+            /p:AppxPackageTestDir="${env:PackageOutputRootDir}\${{ env.PACKAGE_NAME }}" `
             /p:RestorePackagesConfig=true `
-            /p:AppxPackageSigningEnabled=true `
-            /restore
+            /p:AppxPackageSigningEnabled=true
         shell: pwsh    
 
-      - name: Check Package Output Directory
+      - name: Create Archive
         run: |
-          Write-Host "Contents of PackageOutputRootDir (${env:PackageOutputRootDir}):"
-          Get-ChildItem -Path "${env:PackageOutputRootDir}" -Recurse
-        shell: pwsh
-
-      - name: Locate and Archive Build Output
-        run: |
-          $buildDir = Get-ChildItem -Path "${env:PackageOutputRootDir}" -Recurse | Where-Object { $_.PSIsContainer -and $_.Name -like "*${env.PACKAGE_NAME}*" } | Select-Object -First 1
-          
-          if ($null -eq $buildDir) {
-            Write-Host "No build output found in ${env:PackageOutputRootDir}"
-            exit 1
+          $PackagePath = "${env:PackageOutputRootDir}\${env:PACKAGE_NAME}"
+          if (Test-Path $PackagePath) {
+            Write-Host "Creating archive for: $PackagePath"
+            Compress-Archive -Path "$PackagePath\*" -DestinationPath "${env:PackageOutputRootDir}\${env:PACKAGE_NAME}.zip"
+            Write-Host "Contents of package output directory after archiving:"
+            Get-ChildItem -Path "${env:PackageOutputRootDir}" -Recurse
           } else {
-            Write-Host "Build output directory found: $($buildDir.FullName)"
-            Compress-Archive -Path "$($buildDir.FullName)\*" -DestinationPath "${env:PackageOutputRootDir}\${env.PACKAGE_NAME}.zip"
+            Write-Host "Package path does not exist for archiving: $PackagePath"
+            exit 1
           }
         shell: pwsh
 
