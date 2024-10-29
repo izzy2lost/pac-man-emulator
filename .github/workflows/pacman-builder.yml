@@ -83,7 +83,7 @@ jobs:
         shell: pwsh
 
       - name: Upload Build Artifact
-        uses: actions/upload-artifact@v4.3.4
+        uses: actions/upload-artifact@v3
         with:
-          name: ${{ github.event.inputs.package_name }} Build
-          path: ${{ env.PackageOutputRootDir }}\${{ env.PACKAGE_NAME }}.zip
+          name: Pacman Build
+          path: "${{ env.PackageOutputRootDir }}\Pacman_Archive.zip"
