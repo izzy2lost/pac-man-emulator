@@ -35,8 +35,7 @@ jobs:
 
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v1
-
-      - name: Decode PFX from GitHub Secrets
+        
       - name: Generate Self-Signed Certificate
         id: generate_cert
         run: |
