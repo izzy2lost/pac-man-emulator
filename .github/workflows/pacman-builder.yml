@@ -60,9 +60,14 @@ jobs:
             /restore
         shell: pwsh    
 
+      - name: Check Package Output Directory
+        run: |
+          Write-Host "Contents of PackageOutputRootDir (${env:PackageOutputRootDir}):"
+          Get-ChildItem -Path "${env:PackageOutputRootDir}" -Recurse
+        shell: pwsh
+
       - name: Locate and Archive Build Output
         run: |
-          # Check if the package directory exists and list contents for verification
           $buildDir = Get-ChildItem -Path "${env:PackageOutputRootDir}" -Recurse | Where-Object { $_.PSIsContainer -and $_.Name -like "*${env.PACKAGE_NAME}*" } | Select-Object -First 1
           
           if ($null -eq $buildDir) {
