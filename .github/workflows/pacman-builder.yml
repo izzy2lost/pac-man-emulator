@@ -23,9 +23,7 @@ jobs:
       BuildMode: SideLoadOnly
       AppxBundle: Never
       ProjectPath: "emulator.uwp/pac-man-emulator-uwp.csproj"
-      ProjectDirectory: "./emulator.uwp/Xbox Pacman"
       PackageOutputRootDir: C:\AppPackage
-      PackageOutputDir: "emulator.uwp/Xbox Pacman"
 
     steps:
       - name: Checkout Repository
@@ -47,6 +45,7 @@ jobs:
         id: set_package_name
         run: |
           echo "PACKAGE_NAME=${{ github.event.inputs.package_name }}_${{ github.event.inputs.tag_name }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
+
       - name: App Build
         run: |
           msbuild /restore `
@@ -56,42 +55,22 @@ jobs:
             /p:UapAppxPackageBuildMode=$env:BuildMode `
             /p:AppxBundle=$env:AppxBundle `
             /p:PackageCertificateThumbprint="${{ env.THUMBPRINT }}" `
-            /p:AppxPackageTestDir="${{ env.PackageOutputRootDir }}\${{ env.PACKAGE_NAME }}" `
             /p:RestorePackagesConfig=true `
             /p:AppxPackageSigningEnabled=true `
             /restore
         shell: pwsh    
 
-      - name: Clean the Package
+      - name: Locate and Archive Build Output
         run: |
-          $PackagePath = "${env:PackageOutputRootDir}\${env:PACKAGE_NAME}"
-          if (Test-Path $PackagePath) {
-            Write-Host "Cleaning package directory: $PackagePath"
-            Remove-Item -Recurse -path "$PackagePath\Add-AppDevPackage.resources" -ErrorAction SilentlyContinue
-            Remove-Item -Recurse -path "$PackagePath\TelemetryDependencies" -ErrorAction SilentlyContinue
-            Remove-Item -Recurse -path "$PackagePath\Dependencies\arm" -ErrorAction SilentlyContinue
-            Remove-Item -Recurse -path "$PackagePath\Dependencies\arm64" -ErrorAction SilentlyContinue
-            Remove-Item -Recurse -path "$PackagePath\Dependencies\x86" -ErrorAction SilentlyContinue
-            Remove-Item -Recurse -path "$PackagePath\Dependencies\Win32" -ErrorAction SilentlyContinue
-            Remove-Item -path "$PackagePath\Add-AppDevPackage.ps1" -ErrorAction SilentlyContinue
-            Remove-Item -Recurse -path "$PackagePath\Install.ps1" -ErrorAction SilentlyContinue
-          } else {
-            Write-Host "Package path does not exist: $PackagePath"
+          # Check if the package directory exists and list contents for verification
+          $buildDir = Get-ChildItem -Path "${env:PackageOutputRootDir}" -Recurse | Where-Object { $_.PSIsContainer -and $_.Name -like "*${env.PACKAGE_NAME}*" } | Select-Object -First 1
+          
+          if ($null -eq $buildDir) {
+            Write-Host "No build output found in ${env:PackageOutputRootDir}"
             exit 1
-          }
-        shell: pwsh
-
-      - name: Create Archive
-        run: |
-          $PackagePath = "${env:PackageOutputRootDir}\${env:PACKAGE_NAME}"
-          if (Test-Path $PackagePath) {
-            Write-Host "Creating archive for: $PackagePath"
-            Compress-Archive -Path "$PackagePath\*" -DestinationPath "${env:PackageOutputRootDir}\${env:PACKAGE_NAME}.zip"
-            Write-Host "Contents of package output directory after archiving:"
-            Get-ChildItem -Path "${env:PackageOutputRootDir}" -Recurse
           } else {
-            Write-Host "Package path does not exist for archiving: $PackagePath"
-            exit 1
+            Write-Host "Build output directory found: $($buildDir.FullName)"
+            Compress-Archive -Path "$($buildDir.FullName)\*" -DestinationPath "${env:PackageOutputRootDir}\${env.PACKAGE_NAME}.zip"
           }
         shell: pwsh
 
