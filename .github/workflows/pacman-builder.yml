@@ -51,18 +51,17 @@ jobs:
       - name: App Build
         run: |
           msbuild /restore `
-            "$env:SolutionPath" `
-            /p:Platform=$env:Platform `
-            /p:Configuration=$env:Configuration `
-            /p:UapAppxPackageBuildMode=$env:BuildMode `
-            /p:AppxBundle=$env:AppxBundle `
-            /p:PackageCertificateThumbprint="${{ env.THUMBPRINT }}" `
-            /p:AppxPackageTestDir="${{ env.PackageOutputRootDir }}\${{ env.PACKAGE_NAME }}" `
-            /p:RestorePackagesConfig=true `
-            /p:AppxPackageSigningEnabled=true `
-            /restore
+          "$env:SolutionPath" `
+          /p:Platform=$env:Platform `
+          /p:Configuration=$env:Configuration `
+          /p:UapAppxPackageBuildMode=$env:BuildMode `
+          /p:AppxBundle=$env:AppxBundle `
+          /p:PackageCertificateThumbprint="${{ env.THUMBPRINT }}" `
+          /p:AppxPackageTestDir="${env:PackageOutputRootDir}\${env.PACKAGE_NAME}" `
+          /p:OutDir="${env:PackageOutputRootDir}\${env.PACKAGE_NAME}\"
+          /restore
         shell: pwsh
-
+        
       - name: Clean the Package
         run: |
           $PackagePath = "${env:PackageOutputRootDir}\${env:PACKAGE_NAME}"
