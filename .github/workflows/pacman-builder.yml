@@ -58,7 +58,8 @@ jobs:
             /p:AppxBundle=$env:AppxBundle `
             /p:PackageCertificateThumbprint="${{ env.THUMBPRINT }}" `
             /p:AppxPackageTestDir="${{ env.PackageOutputRootDir }}\${{ env.PACKAGE_NAME }}" `
-            /p:RestorePackagesConfig=true
+            /p:RestorePackagesConfig=true `
+            /restore
         shell: pwsh
 
       - name: Clean the Package
