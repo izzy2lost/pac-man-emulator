@@ -73,7 +73,7 @@ jobs:
           $PackagePath = "${env:PackageOutputRootDir}\${env:PACKAGE_NAME}"
           if (Test-Path $PackagePath) {
             Write-Host "Creating archive for: $PackagePath"
-            Compress-Archive -Path "$PackagePath\*" -DestinationPath "${env:PackageOutputRootDir}\${env:PACKAGE_NAME}.zip"
+            Compress-Archive -Path "$PackagePath\*" -DestinationPath "${env:PackageOutputRootDir}\${{ github.event.inputs.package_name }}.zip"
             Write-Host "Contents of package output directory after archiving:"
             Get-ChildItem -Path "${env:PackageOutputRootDir}" -Recurse
           } else {
