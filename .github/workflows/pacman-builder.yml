@@ -59,6 +59,7 @@ jobs:
             /p:PackageCertificateThumbprint="${{ env.THUMBPRINT }}" `
             /p:AppxPackageTestDir="${{ env.PackageOutputRootDir }}\${{ env.PACKAGE_NAME }}" `
             /p:RestorePackagesConfig=true `
+            /p:AppxPackageSigningEnabled=true `
             /restore
         shell: pwsh
 
