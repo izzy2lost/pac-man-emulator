@@ -82,6 +82,12 @@ jobs:
           }
         shell: pwsh
 
+      - name: List Directory Contents
+        run: |
+          Write-Host "Listing contents of ${env:PackageOutputRootDir}:"
+          Get-ChildItem -Path "${env:PackageOutputRootDir}" -Recurse -Force
+        shell: pwsh
+
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v3
         with:
