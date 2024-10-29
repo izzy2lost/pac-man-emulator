@@ -62,6 +62,12 @@ jobs:
             /p:AppxPackageSigningEnabled=true
         shell: pwsh    
 
+      - name: List Output Directory
+        run: |
+          Write-Host "Listing contents of output directory:"
+          Get-ChildItem -Path "${env:PackageOutputRootDir}" -Recurse -Force
+        shell: pwsh
+
       - name: Create Archive
         run: |
           $PackagePath = "${env:PackageOutputRootDir}\${env:PACKAGE_NAME}"
