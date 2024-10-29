@@ -91,5 +91,5 @@ jobs:
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: Pacman Build
-          path: "${{ env.PackageOutputRootDir }}\Pacman_Archive.zip"
+          name: Pacman_Archive
+          path: D:\a\pac-man-emulator\pac-man-emulator\emulator.uwp\AppPackages\Pacman_Archive.zip
