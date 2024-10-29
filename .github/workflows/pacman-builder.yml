@@ -26,7 +26,6 @@ jobs:
       ProjectDirectory: "./emulator.uwp/Xbox Pacman"
       PackageOutputRootDir: C:\AppPackage
       PackageOutputDir: "emulator.uwp/Xbox Pacman"
-      PfxPassword: 'YourSecurePassword123!' # Replace with a strong password
 
     steps:
       - name: Checkout Repository
@@ -38,19 +37,11 @@ jobs:
         uses: microsoft/setup-msbuild@v1
 
       - name: Decode PFX from GitHub Secrets
-        id: decode_pfx
+      - name: Generate Self-Signed Certificate
+        id: generate_cert
         run: |
-          echo "${{ secrets.PFX_CERTIFICATE_BASE64 }}" | base64 --decode > "$env:PackageOutputRootDir\uwp_cert.pfx"
-        shell: pwsh
-
-      - name: Verify PFX File
-        run: |
-          if (Test-Path "$env:PackageOutputRootDir\uwp_cert.pfx") {
-            Write-Host "PFX file created successfully."
-          } else {
-            Write-Host "Failed to create PFX file."
-            exit 1
-          }
+          $cert = New-SelfSignedCertificate -CertStoreLocation "Cert:\CurrentUser\My" -Subject "CN=MyUWPCert" -KeyAlgorithm RSA -KeyLength 2048 -Provider "Microsoft Enhanced RSA and AES Cryptographic Provider" -KeyExportPolicy Exportable -NotAfter (Get-Date).AddYears(1) -Type CodeSigningCert
+          echo "THUMBPRINT=$($cert.Thumbprint)" >> $env:GITHUB_ENV
         shell: pwsh
 
       - name: Set Package Name
@@ -66,10 +57,8 @@ jobs:
             /p:Configuration=$env:Configuration `
             /p:UapAppxPackageBuildMode=$env:BuildMode `
             /p:AppxBundle=$env:AppxBundle `
-            /p:PackageCertificateThumbprint="CD2BD70C693B0F785F0B34883E1764D61990FE15" `
-            /p:AppxPackageTestDir="${env:PackageOutputRootDir}\${env:PACKAGE_NAME}" `
-            /p:AppxPackageSigningEnabled=true `
-            /p:AppxPackageCertificatePath="$env:PackageOutputRootDir\uwp_cert.pfx" `
+            /p:PackageCertificateThumbprint="${{ env.THUMBPRINT }}" `
+            /p:AppxPackageTestDir="${{ env.PackageOutputRootDir }}\${{ env.PACKAGE_NAME }}" `
             /p:RestorePackagesConfig=true
         shell: pwsh
 
